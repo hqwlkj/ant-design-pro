@@ -12,6 +12,7 @@ const menuData = [{
     name: '工作台',
     path: 'workplace',
     // hideInMenu: true,
+    // role: ['admin'],
   }],
 }, {
   name: '表单页',
@@ -97,6 +98,7 @@ const menuData = [{
   name: '账户',
   icon: 'user',
   path: 'user',
+  role: ['guest'],
   children: [{
     name: '登录',
     path: 'login',
@@ -114,19 +116,21 @@ const menuData = [{
   target: '_blank',
 }];
 
-function formatter(data, parentPath = '') {
+function formatter(data, parentPath = '', parentRole) {
   const list = [];
   data.forEach((item) => {
     if (item.children) {
       list.push({
         ...item,
         path: `${parentPath}${item.path}`,
-        children: formatter(item.children, `${parentPath}${item.path}/`),
+        role: item.role || parentRole,
+        children: formatter(item.children, `${parentPath}${item.path}/`, item.role),
       });
     } else {
       list.push({
         ...item,
         path: `${parentPath}${item.path}`,
+        role: item.role || parentRole,
       });
     }
   });
