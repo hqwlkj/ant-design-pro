@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Chart, Geom, Coord, Shape } from 'bizcharts';
+import { Chart, Geom, Coord, Shape, Tooltip } from 'bizcharts';
 import DataSet from '@antv/data-set';
 import Debounce from 'lodash-decorators/debounce';
 import Bind from 'lodash-decorators/bind';
@@ -19,26 +19,33 @@ class TagCloud extends Component {
   };
 
   componentDidMount() {
-    this.initTagCloud();
-    this.renderChart();
-    window.addEventListener('resize', this.resize);
+    requestAnimationFrame(() => {
+      this.initTagCloud();
+      this.renderChart();
+    });
+    window.addEventListener('resize', this.resize, { passive: true });
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)) {
-      this.renderChart(nextProps);
+  componentDidUpdate(preProps) {
+    const { data } = this.props;
+    if (JSON.stringify(preProps.data) !== JSON.stringify(data)) {
+      this.renderChart(this.props);
     }
   }
 
   componentWillUnmount() {
+    this.isUnmount = true;
+    window.cancelAnimationFrame(this.requestRef);
     window.removeEventListener('resize', this.resize);
   }
 
   resize = () => {
-    this.renderChart();
+    this.requestRef = requestAnimationFrame(() => {
+      this.renderChart();
+    });
   };
 
-  saveRootRef = (node) => {
+  saveRootRef = node => {
     this.root = node;
   };
 
@@ -76,7 +83,7 @@ class TagCloud extends Component {
 
   @Bind()
   @Debounce(500)
-  renderChart = (nextProps) => {
+  renderChart(nextProps) {
     // const colors = ['#1890FF', '#41D9C7', '#2FC25B', '#FACC14', '#9AE65C'];
     const { data, height } = nextProps || this.props;
 
@@ -84,33 +91,33 @@ class TagCloud extends Component {
       return;
     }
 
-    const h = height * 4;
-    const w = this.root.offsetWidth * 4;
+    const h = height;
+    const w = this.root.offsetWidth;
 
-    const imageMask = new Image();
-    imageMask.crossOrigin = '';
-    imageMask.src = imgUrl;
-
-    imageMask.onload = () => {
+    const onload = () => {
       const dv = new DataSet.View().source(data);
       const range = dv.range('value');
       const [min, max] = range;
       dv.transform({
         type: 'tag-cloud',
         fields: ['name', 'value'],
-        imageMask,
+        imageMask: this.imageMask,
         font: 'Verdana',
         size: [w, h], // 宽高设置最好根据 imageMask 做调整
-        padding: 5,
+        padding: 0,
         timeInterval: 5000, // max execute time
         rotate() {
           return 0;
         },
         fontSize(d) {
           // eslint-disable-next-line
-          return Math.pow((d.value - min) / (max - min), 2) * (70 - 20) + 20;
+          return Math.pow((d.value - min) / (max - min), 2) * (17.5 - 5) + 5;
         },
       });
+
+      if (this.isUnmount) {
+        return;
+      }
 
       this.setState({
         dv,
@@ -118,7 +125,17 @@ class TagCloud extends Component {
         h,
       });
     };
-  };
+
+    if (!this.imageMask) {
+      this.imageMask = new Image();
+      this.imageMask.crossOrigin = '';
+      this.imageMask.src = imgUrl;
+
+      this.imageMask.onload = onload;
+    } else {
+      onload();
+    }
+  }
 
   render() {
     const { className, height } = this.props;
@@ -131,9 +148,30 @@ class TagCloud extends Component {
         ref={this.saveRootRef}
       >
         {dv && (
-          <Chart width={w} height={h} data={dv} padding={0}>
+          <Chart
+            width={w}
+            height={h}
+            data={dv}
+            padding={0}
+            scale={{
+              x: { nice: false },
+              y: { nice: false },
+            }}
+          >
+            <Tooltip showTitle={false} />
             <Coord reflect="y" />
-            <Geom type="point" position="x*y" color="text" shape="cloud" />
+            <Geom
+              type="point"
+              position="x*y"
+              color="text"
+              shape="cloud"
+              tooltip={[
+                'text*value',
+                function trans(text, value) {
+                  return { name: text, value };
+                },
+              ]}
+            />
           </Chart>
         )}
       </div>

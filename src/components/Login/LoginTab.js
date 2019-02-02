@@ -1,32 +1,41 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import { Tabs } from 'antd';
+import LoginContext from './loginContext';
 
 const { TabPane } = Tabs;
 
 const generateId = (() => {
   let i = 0;
-  return (prefix: string = '') => {
+  return (prefix = '') => {
     i += 1;
     return `${prefix}${i}`;
   };
 })();
 
-export default class LoginTab extends Component {
-  static __ANT_PRO_LOGIN_TAB = true;
-  static contextTypes = {
-    tabUtil: PropTypes.object,
-  };
+class LoginTab extends Component {
   constructor(props) {
     super(props);
     this.uniqueId = generateId('login-tab-');
   }
-  componentWillMount() {
-    if (this.context.tabUtil) {
-      this.context.tabUtil.addTab(this.uniqueId);
-    }
+
+  componentDidMount() {
+    const { tabUtil } = this.props;
+    tabUtil.addTab(this.uniqueId);
   }
+
   render() {
-    return <TabPane {...this.props} />;
+    const { children } = this.props;
+    return <TabPane {...this.props}>{children}</TabPane>;
   }
 }
+
+const wrapContext = props => (
+  <LoginContext.Consumer>
+    {value => <LoginTab tabUtil={value.tabUtil} {...props} />}
+  </LoginContext.Consumer>
+);
+
+// 标志位 用来判断是不是自定义组件
+wrapContext.typeName = 'LoginTab';
+
+export default wrapContext;

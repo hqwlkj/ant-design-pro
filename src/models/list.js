@@ -1,42 +1,38 @@
-import { queryFakeList } from '../services/api';
+import { queryFakeList, removeFakeList, addFakeList, updateFakeList } from '@/services/api';
 
 export default {
   namespace: 'list',
 
   state: {
     list: [],
-    loading: false,
   },
 
   effects: {
     *fetch({ payload }, { call, put }) {
-      yield put({
-        type: 'changeLoading',
-        payload: true,
-      });
       const response = yield call(queryFakeList, payload);
       yield put({
         type: 'queryList',
         payload: Array.isArray(response) ? response : [],
       });
-      yield put({
-        type: 'changeLoading',
-        payload: false,
-      });
     },
     *appendFetch({ payload }, { call, put }) {
-      yield put({
-        type: 'changeLoading',
-        payload: true,
-      });
       const response = yield call(queryFakeList, payload);
       yield put({
         type: 'appendList',
         payload: Array.isArray(response) ? response : [],
       });
+    },
+    *submit({ payload }, { call, put }) {
+      let callback;
+      if (payload.id) {
+        callback = Object.keys(payload).length === 1 ? removeFakeList : updateFakeList;
+      } else {
+        callback = addFakeList;
+      }
+      const response = yield call(callback, payload); // post
       yield put({
-        type: 'changeLoading',
-        payload: false,
+        type: 'queryList',
+        payload: response,
       });
     },
   },
@@ -52,12 +48,6 @@ export default {
       return {
         ...state,
         list: state.list.concat(action.payload),
-      };
-    },
-    changeLoading(state, action) {
-      return {
-        ...state,
-        loading: action.payload,
       };
     },
   },

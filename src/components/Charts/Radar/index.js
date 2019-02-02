@@ -6,32 +6,34 @@ import styles from './index.less';
 
 /* eslint react/no-danger:0 */
 @autoHeight()
-export default class Radar extends Component {
+class Radar extends Component {
   state = {
     legendData: [],
   };
 
   componentDidMount() {
-    this.getLengendData();
+    this.getLegendData();
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (this.props.data !== nextProps.data) {
-      this.getLengendData();
+  componentDidUpdate(preProps) {
+    const { data } = this.props;
+    if (data !== preProps.data) {
+      this.getLegendData();
     }
   }
 
-  getG2Instance = (chart) => {
+  getG2Instance = chart => {
     this.chart = chart;
   };
 
   // for custom lengend view
-  getLengendData = () => {
+  getLegendData = () => {
     if (!this.chart) return;
     const geom = this.chart.getAllGeoms()[0]; // 获取所有的图形
+    if (!geom) return;
     const items = geom.get('dataArray') || []; // 获取图形对应的
 
-    const legendData = items.map((item) => {
+    const legendData = items.map(item => {
       // eslint-disable-next-line
       const origins = item.map(t => t._origin);
       const result = {
@@ -49,7 +51,7 @@ export default class Radar extends Component {
     });
   };
 
-  handleRef = (n) => {
+  handleRef = n => {
     this.node = n;
   };
 
@@ -90,7 +92,7 @@ export default class Radar extends Component {
       title,
       hasLegend = false,
       forceFit = true,
-      tickCount = 4,
+      tickCount = 5,
       padding = [35, 30, 16, 30],
       animate = true,
       colors = defaultColors,
@@ -109,72 +111,74 @@ export default class Radar extends Component {
 
     return (
       <div className={styles.radar} style={{ height }}>
-        <div>
-          {title && <h4>{title}</h4>}
-          <Chart
-            scale={scale}
-            height={chartHeight}
-            forceFit={forceFit}
-            data={data}
-            padding={padding}
-            animate={animate}
-            onGetG2Instance={this.getG2Instance}
-          >
-            <Tooltip />
-            <Coord type="polar" />
-            <Axis
-              name="label"
-              line={null}
-              tickLine={null}
-              grid={{
-                lineStyle: {
-                  lineDash: null,
-                },
-                hideFirstLine: false,
-              }}
-            />
-            <Axis
-              name="value"
-              grid={{
-                type: 'polygon',
-                lineStyle: {
-                  lineDash: null,
-                },
-              }}
-            />
-            <Geom type="line" position="label*value" color={['name', colors]} size={1} />
-            <Geom
-              type="point"
-              position="label*value"
-              color={['name', colors]}
-              shape="circle"
-              size={3}
-            />
-          </Chart>
-          {hasLegend && (
-            <Row className={styles.legend}>
-              {legendData.map((item, i) => (
-                <Col
-                  span={24 / legendData.length}
-                  key={item.name}
-                  onClick={() => this.handleLegendClick(item, i)}
-                >
-                  <div className={styles.legendItem}>
-                    <p>
-                      <span
-                        className={styles.dot}
-                        style={{ backgroundColor: !item.checked ? '#aaa' : item.color }}
-                      />
-                      <span>{item.name}</span>
-                    </p>
-                    <h6>{item.value}</h6>
-                  </div>
-                </Col>
-              ))}
-            </Row>
-          )}
-        </div>
+        {title && <h4>{title}</h4>}
+        <Chart
+          scale={scale}
+          height={chartHeight}
+          forceFit={forceFit}
+          data={data}
+          padding={padding}
+          animate={animate}
+          onGetG2Instance={this.getG2Instance}
+        >
+          <Tooltip />
+          <Coord type="polar" />
+          <Axis
+            name="label"
+            line={null}
+            tickLine={null}
+            grid={{
+              lineStyle: {
+                lineDash: null,
+              },
+              hideFirstLine: false,
+            }}
+          />
+          <Axis
+            name="value"
+            grid={{
+              type: 'polygon',
+              lineStyle: {
+                lineDash: null,
+              },
+            }}
+          />
+          <Geom type="line" position="label*value" color={['name', colors]} size={1} />
+          <Geom
+            type="point"
+            position="label*value"
+            color={['name', colors]}
+            shape="circle"
+            size={3}
+          />
+        </Chart>
+        {hasLegend && (
+          <Row className={styles.legend}>
+            {legendData.map((item, i) => (
+              <Col
+                span={24 / legendData.length}
+                key={item.name}
+                onClick={() => this.handleLegendClick(item, i)}
+              >
+                <div className={styles.legendItem}>
+                  <p>
+                    <span
+                      className={styles.dot}
+                      style={{
+                        backgroundColor: !item.checked ? '#aaa' : item.color,
+                      }}
+                    />
+                    <span>{item.name}</span>
+                  </p>
+                  <h6>{item.value}</h6>
+                </div>
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
     );
   }
 }
+
+export default Radar;
